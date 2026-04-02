@@ -2267,6 +2267,60 @@ def setup_gateway(config: dict):
         print()
         print_info("   Open config in your editor:  hermes config edit")
 
+    # ── Microsoft Teams ──
+    existing_teams = get_env_value("MICROSOFT_APP_ID")
+    if existing_teams:
+        print_info("Microsoft Teams: already configured")
+        if prompt_yes_no("Reconfigure Microsoft Teams?", False):
+            existing_teams = None
+
+    if not existing_teams and prompt_yes_no("Set up Microsoft Teams?", False):
+        print_info("Register an app at https://portal.azure.com → App registrations")
+        print_info("Create a client secret under 'Certificates & secrets'")
+        print_info("Enable the Microsoft Teams channel in Bot Services")
+        print()
+
+        app_id = prompt("App (Client) ID")
+        if app_id:
+            save_env_value("MICROSOFT_APP_ID", app_id)
+            print_success("Microsoft Teams App ID saved")
+
+            app_password = prompt("App Password (Client Secret)", password=True)
+            if app_password:
+                save_env_value("MICROSOFT_APP_PASSWORD", app_password)
+                print_success("Microsoft Teams App Password saved")
+
+            tenant_id = prompt("Tenant ID (leave empty for 'common' / multi-tenant)")
+            if tenant_id:
+                save_env_value("MICROSOFT_TENANT_ID", tenant_id)
+
+            port = prompt("Webhook server port (default 8645)")
+            if port:
+                try:
+                    save_env_value("MICROSOFT_TEAMS_PORT", str(int(port)))
+                except ValueError:
+                    print_warning("Invalid port number, using default 8645")
+
+            # Allowed users
+            print()
+            print_info("🔒 Security: Restrict who can use the bot")
+            allowed_users = prompt("Allowed user IDs (comma-separated, or leave empty)")
+            if allowed_users:
+                save_env_value("MICROSOFT_TEAMS_ALLOWED_USERS", allowed_users.replace(" ", ""))
+                print_success("Teams allowlist configured")
+
+            # Home channel
+            print()
+            print_info("📬 Home Channel: where Hermes delivers cron results and notifications.")
+            home_channel = prompt("Home conversation ID (leave empty to set later)")
+            if home_channel:
+                save_env_value("MICROSOFT_TEAMS_HOME_CHANNEL", home_channel)
+
+            print()
+            print_success("Microsoft Teams configured!")
+            print_info("   Messaging endpoint: https://your-server:8645/teams/webhook")
+            print_info("   Set this URL in Azure Bot Services → Messaging endpoint")
+
     # ── Gateway Service Setup ──
     any_messaging = (
         get_env_value("TELEGRAM_BOT_TOKEN")
@@ -2277,6 +2331,7 @@ def setup_gateway(config: dict):
         or get_env_value("MATRIX_PASSWORD")
         or get_env_value("WHATSAPP_ENABLED")
         or get_env_value("WEBHOOK_ENABLED")
+        or get_env_value("MICROSOFT_APP_ID")
     )
     if any_messaging:
         print()

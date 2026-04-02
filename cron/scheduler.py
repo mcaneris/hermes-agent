@@ -164,6 +164,7 @@ def _deliver_result(job: dict, content: str) -> None:
         "dingtalk": Platform.DINGTALK,
         "feishu": Platform.FEISHU,
         "wecom": Platform.WECOM,
+        "microsoft-teams": Platform.MICROSOFT_TEAMS,
         "email": Platform.EMAIL,
         "sms": Platform.SMS,
     }

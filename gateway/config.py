@@ -63,6 +63,7 @@ class Platform(Enum):
     WEBHOOK = "webhook"
     FEISHU = "feishu"
     WECOM = "wecom"
+    MICROSOFT_TEAMS = "microsoft-teams"
 
 
 @dataclass
@@ -889,6 +890,31 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
                 platform=Platform.WECOM,
                 chat_id=wecom_home,
                 name=os.getenv("WECOM_HOME_CHANNEL_NAME", "Home"),
+            )
+
+    # Microsoft Teams
+    teams_app_id = os.getenv("MICROSOFT_APP_ID")
+    teams_app_password = os.getenv("MICROSOFT_APP_PASSWORD")
+    if teams_app_id and teams_app_password:
+        if Platform.MICROSOFT_TEAMS not in config.platforms:
+            config.platforms[Platform.MICROSOFT_TEAMS] = PlatformConfig()
+        config.platforms[Platform.MICROSOFT_TEAMS].enabled = True
+        config.platforms[Platform.MICROSOFT_TEAMS].token = teams_app_id
+        config.platforms[Platform.MICROSOFT_TEAMS].extra.update({
+            "app_id": teams_app_id,
+            "app_password": teams_app_password,
+            "tenant_id": os.getenv("MICROSOFT_TENANT_ID", "common"),
+            "host": os.getenv("MICROSOFT_TEAMS_HOST", "0.0.0.0"),
+            "port": int(os.getenv("MICROSOFT_TEAMS_PORT", "8645") or 8645),
+            "allow_dm": os.getenv("MICROSOFT_ALLOW_DM", "true").lower() in ("true", "1", "yes"),
+            "allow_channels": os.getenv("MICROSOFT_ALLOW_CHANNELS", "true").lower() in ("true", "1", "yes"),
+        })
+        teams_home = os.getenv("MICROSOFT_TEAMS_HOME_CHANNEL")
+        if teams_home:
+            config.platforms[Platform.MICROSOFT_TEAMS].home_channel = HomeChannel(
+                platform=Platform.MICROSOFT_TEAMS,
+                chat_id=teams_home,
+                name=os.getenv("MICROSOFT_TEAMS_HOME_CHANNEL_NAME", "Home"),
             )
 
     # Session settings

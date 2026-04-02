@@ -131,6 +131,7 @@ def _handle_send(args):
         "dingtalk": Platform.DINGTALK,
         "feishu": Platform.FEISHU,
         "wecom": Platform.WECOM,
+        "microsoft-teams": Platform.MICROSOFT_TEAMS,
         "email": Platform.EMAIL,
         "sms": Platform.SMS,
     }
@@ -371,6 +372,8 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
             result = await _send_feishu(pconfig, chat_id, chunk, thread_id=thread_id)
         elif platform == Platform.WECOM:
             result = await _send_wecom(pconfig.extra, chat_id, chunk)
+        elif platform == Platform.MICROSOFT_TEAMS:
+            result = await _send_teams(pconfig.extra, chat_id, chunk)
         else:
             result = {"error": f"Direct sending not yet implemented for {platform.value}"}
 
@@ -822,6 +825,79 @@ async def _send_wecom(extra, chat_id, message):
             await adapter.disconnect()
     except Exception as e:
         return {"error": f"WeCom send failed: {e}"}
+
+
+async def _send_teams(extra, chat_id, message):
+    """Send via Microsoft Teams using Bot Framework REST API."""
+    try:
+        import aiohttp
+    except ImportError:
+        return {"error": "Microsoft Teams requires aiohttp. Run: pip install aiohttp"}
+
+    app_id = extra.get("app_id") or __import__("os").getenv("MICROSOFT_APP_ID", "")
+    app_password = extra.get("app_password") or __import__("os").getenv("MICROSOFT_APP_PASSWORD", "")
+    tenant_id = extra.get("tenant_id") or __import__("os").getenv("MICROSOFT_TENANT_ID", "common")
+    service_url = extra.get("service_url", "")
+
+    if not app_id or not app_password:
+        return {"error": "Microsoft Teams not configured. Set MICROSOFT_APP_ID and MICROSOFT_APP_PASSWORD."}
+
+    # Get access token
+    token_url = (
+        f"https://login.microsoftonline.com/{tenant_id}"
+        f"/oauth2/v2.0/token"
+    )
+    try:
+        async with aiohttp.ClientSession() as session:
+            token_resp = await session.post(
+                token_url,
+                data={
+                    "grant_type": "client_credentials",
+                    "client_id": app_id,
+                    "client_secret": app_password,
+                    "scope": "https://api.botframework.com/.default",
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=aiohttp.ClientTimeout(total=15),
+            )
+            if token_resp.status != 200:
+                body = await token_resp.text()
+                return {"error": f"Teams token failed {token_resp.status}: {body}"}
+            token_data = await token_resp.json()
+            access_token = token_data["access_token"]
+    except Exception as e:
+        return {"error": f"Teams token request failed: {e}"}
+
+    if not service_url:
+        return {"error": "Teams service_url not available. Send a message to the bot first to establish a conversation."}
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+    url = f"{service_url}v3/conversations/{chat_id}/activities"
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            resp = await session.post(
+                url,
+                json={"type": "message", "text": message},
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=15),
+            )
+            if resp.status in (200, 201):
+                data = await resp.json()
+                return {
+                    "success": True,
+                    "platform": "microsoft-teams",
+                    "chat_id": chat_id,
+                    "message_id": data.get("id", ""),
+                }
+            else:
+                body = await resp.text()
+                return {"error": f"Teams send failed {resp.status}: {body}"}
+    except Exception as e:
+        return {"error": f"Teams send failed: {e}"}
 
 
 async def _send_feishu(pconfig, chat_id, message, media_files=None, thread_id=None):

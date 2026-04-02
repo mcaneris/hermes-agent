@@ -263,6 +263,13 @@ PLATFORM_HINTS = {
         "only — no markdown, no formatting. SMS messages are limited to ~1600 "
         "characters, so be brief and direct."
     ),
+    "microsoft-teams": (
+        "You are in Microsoft Teams, either in a channel or a direct message. "
+        "Plain text and basic formatting (bold, italic) are supported. "
+        "Do not use markdown code blocks in channels — use plain text instead. "
+        "You can send images via URL — include them inline and they will be sent as attachments. "
+        "Mention @botname to invoke the bot in channels."
+    ),
 }
 
 CONTEXT_FILE_MAX_CHARS = 20_000

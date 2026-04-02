@@ -1403,6 +1403,35 @@ _PLATFORMS = [
              "help": "Chat ID for scheduled results and notifications."},
         ],
     },
+    {
+        "key": "microsoft-teams",
+        "label": "Microsoft Teams",
+        "emoji": "🏢",
+        "token_var": "MICROSOFT_APP_ID",
+        "setup_instructions": [
+            "1. Register an app at https://portal.azure.com → App registrations → New registration",
+            "2. Under 'Certificates & secrets', create a new client secret",
+            "3. In 'Bot Services', add a Messaging endpoint: https://your-server:T EAMS_PORT/teams/webhook (must be HTTPS — use ngrok or a reverse proxy in dev)",
+            "4. Enable Microsoft Teams channel in Bot Services",
+            "5. Note your App ID (client ID) and client secret",
+            "6. Set MICROSOFT_APP_ID and MICROSOFT_APP_PASSWORD as env vars or in config.yaml",
+        ],
+        "vars": [
+            {"name": "MICROSOFT_APP_ID", "prompt": "App (Client) ID", "password": False,
+             "help": "Azure AD application client ID from the app registration."},
+            {"name": "MICROSOFT_APP_PASSWORD", "prompt": "App Password (Client Secret)", "password": True,
+             "help": "Client secret from 'Certificates & secrets' in Azure AD."},
+            {"name": "MICROSOFT_TENANT_ID", "prompt": "Tenant ID (optional, default: common)", "password": False,
+             "help": "Azure tenant ID. Use 'common' for multi-tenant or your specific tenant ID."},
+            {"name": "MICROSOFT_TEAMS_PORT", "prompt": "Webhook server port (default: 8645)", "password": False,
+             "help": "Port for the Teams webhook receiver. Must be accessible from the internet."},
+            {"name": "MICROSOFT_TEAMS_ALLOWED_USERS", "prompt": "Allowed user IDs (comma-separated, or empty)", "password": False,
+             "is_allowlist": True,
+             "help": "Restrict which Teams users can interact with the bot."},
+            {"name": "MICROSOFT_TEAMS_HOME_CHANNEL", "prompt": "Home chat ID (optional, for cron/notifications)", "password": False,
+             "help": "Chat ID for scheduled results and notifications."},
+        ],
+    },
 ]
 
 
